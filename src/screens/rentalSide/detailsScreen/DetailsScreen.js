@@ -501,25 +501,30 @@ const DetailsScreen = props => {
         const response = await property(propertyData);
         setLoading(false);
 
-        if (response.data && response.data.status) {
+        if (response && response.status) {
           console.log('Property added successfully:', response.data);
           RNToasty.Show({ title: 'Property added successfully' });
           setIsEdit(false);
+        } else {
+          const message = response.message;
+          RNToasty.Show({title: message});
+          if (message === 'Invalid Token') {
+            doLogout()
+          }
         }
       } catch (error) {
         setLoading(false);
-        const message = error.message || error.response.data.message
+        const message = error.message;
+        RNToasty.Show({title: message});
         if (message === 'Invalid Token') {
-          doLogout();
-        } else if (message) {
-          RNToasty.Show({ title: error.message });
+          doLogout()
         }
       }
     } else {
       setLoading(false);
-      RNToasty.Show({ title: 'No internet connection available!' });
+      RNToasty.Show({title: 'No internet connection available!'});
     }
-  };
+  }
 
   const doLogout = () => {
     const appData = AppConstants.AsyncKeyLiterals

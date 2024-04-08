@@ -37,14 +37,13 @@ API.interceptors.response.use(
     return response;
   },
   async function (error) {
-    return error;
+    if (error.response) {
+      return error.response 
+    } else {
+      return error;
+    }
   }
 );
-
-
-const doLogout = () => {
-
-}
 
 export const saveToken = (data) => {
   token = data;

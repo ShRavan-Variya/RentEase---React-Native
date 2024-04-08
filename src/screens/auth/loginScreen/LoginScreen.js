@@ -65,8 +65,8 @@ const LoginScreen = props => {
         }
         const response = await login(data);
         setLoading(false);
-        if (response.data && response.data.status) {
-          const data = response.data.data
+        if (response && response.status) {
+          const data = response.data
           const CacheKey = AppConstants.AsyncKeyLiterals;
 
           cacheData.saveDataToCachedWithKey(CacheKey.isLoggedIn, true);
@@ -85,35 +85,18 @@ const LoginScreen = props => {
               routes: [{name: 'ScreenStackNavigation'}],
             });
           }
+        } else {
+          const message = response.message;
+          RNToasty.Show({title: message});
         }
       } catch (error) {
         setLoading(false);
-        const message = error.message || error.response.data.message
-        if (message === 'Invalid Token') {
-          doLogout();
-        } else if (message) {
-          RNToasty.Show({title: error.message});
-        }
+        RNToasty.Show({title: error.message});
       }
     } else {
       setLoading(false);
       RNToasty.Show({title: 'No internet connection available!'});
     }
-  }
-
-  const doLogout = () => {
-    const appData = AppConstants.AsyncKeyLiterals
-    cacheData.removeDataFromCachedWithKey(appData.isLoggedIn)
-    cacheData.removeDataFromCachedWithKey(appData.userData)
-    cacheData.removeDataFromCachedWithKey(appData.loginUserId)
-    cacheData.removeDataFromCachedWithKey(appData.token)
-    cacheData.removeDataFromCachedWithKey(appData.userType)
-
-
-    props.navigation.reset({
-      index: 0,
-      routes: [{name: 'SplashScreen'}]
-    })
   }
 
   return (
