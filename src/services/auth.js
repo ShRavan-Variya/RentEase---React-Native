@@ -15,3 +15,8 @@ export async function property(data) {
   const res = await API.post('add_property_data', data);
   return res.data;
 }
+
+export async function uploadImages(_config, data) {
+  const res = await API.post('upload', data, _config);
+  return res.data;
+}

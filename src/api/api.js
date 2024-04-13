@@ -1,12 +1,11 @@
 import {Platform} from 'react-native';
 import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import NetInfo from '@react-native-community/netinfo';
-import {RNToasty} from 'react-native-toasty';
 import axios from 'axios';
 
 let token;
 
-export const API_BASE_URL = 'http://192.168.1.6:5000/api/';
+export const API_BASE_URL = 'http://192.168.1.2:5000/api/';
 
 export const API = axios.create({
   baseURL: API_BASE_URL,
@@ -18,12 +17,16 @@ API.interceptors.request.use(
     // _config.headers['Content-Type'] = 'application/json';
 
     if (token !== null && token !== '') {
-      _config.headers.authorization = 'Bearer ' + token;
+      _config.headers.authorization = token;
     }
 
     if (_config.headers['Content-Type'] !== 'multipart/form-data') {
       _config.headers['Content-Type'] = 'application/json';
     }
+
+    // console.log('====================================');
+    // console.log('_config :: ', JSON.stringify(_config));
+    // console.log('====================================');
 
     return _config;
   },

@@ -30,13 +30,15 @@ import { AppConstants, cacheData } from '../../../module';
 import { isNetworkAvailable } from '../../../api';
 import { Loader } from '../../../components/Loader';
 import { RNToasty } from 'react-native-toasty';
-import axios from 'axios';
-import { property } from '../../../services/auth';
+import { property, uploadImages, uploadMainImage } from '../../../services/auth';
 
 const DetailsScreen = props => {
   //All States
   const [loading, setLoading] = useState(false);
-  const [imageUri, setImageUri] = useState(null);
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [listDataFacilities, setListDataFacilities] = useState([]);
+  const [listDataAdvantage, setListDataAdvantage] = useState([]);
+  const [listDataNearBy, setListDataNearBy] = useState([]);
   //Main States
   const [mainImage, setMainImage] = useState(null);
   const [firstName, setFirstName] = useState('');
@@ -52,10 +54,6 @@ const DetailsScreen = props => {
   const [isVisibleDelete, setIsVisibleDelete] = useState(false);
   const [isLive, setIsLive] = useState(false);
   const [isOnPress, setIsOnPress] = useState(false);
-  const [listDataHome, setListDataHome] = useState([]);
-  const [listDataFacilities, setListDataFacilities] = useState([]);
-  const [listDataAdvantage, setListDataAdvantage] = useState([]);
-  const [listDataNearBy, setListDataNearBy] = useState([]);
   const [listImages, setListImages] = useState([]);
   //Error States
   const [errorFirstName, setErrorFirstName] = useState('');
@@ -120,17 +118,17 @@ const DetailsScreen = props => {
     );
     setIsRental(userType === 2);
 
-    const homeDetailsItem = defaultPopupData.homeDetails;
-    setListDataHome(homeDetailsItem);
+    // const homeDetailsItem = defaultPopupData.homeDetails;
+    // setListDataHome(homeDetailsItem);
 
-    const facilitiesItem = defaultPopupData.facilities;
-    setListDataFacilities(facilitiesItem);
+    // const facilitiesItem = defaultPopupData.facilities;
+    // setListDataFacilities(facilitiesItem);
 
-    const advantagesItem = defaultPopupData.advantages;
-    setListDataAdvantage(advantagesItem);
+    // const advantagesItem = defaultPopupData.advantages;
+    // setListDataAdvantage(advantagesItem);
 
-    const nearByItem = defaultPopupData.nearBy;
-    setListDataNearBy(nearByItem);
+    // const nearByItem = defaultPopupData.nearBy;
+    // setListDataNearBy(nearByItem);
 
     const selectTypeData = defaultPopupData.selectType;
     setListSelectType(selectTypeData);
@@ -181,7 +179,7 @@ const DetailsScreen = props => {
     } else if (state.trim().length === 0) {
       validate = false;
       setErrorState('*Please enter your state!');
-    } else if (listDataHome.length === 0) {
+    } else if (selectedItems.length === 0) {
       validate = false;
       setErrorHomeDetailsData('*Please add your home details!');
     } else if (listDataFacilities.length === 0) {
@@ -306,7 +304,7 @@ const DetailsScreen = props => {
     if (selectSelectedItems.length === 0) {
       validate = false;
       setErrorSelectType('*Please select any home type');
-    } else if (roomSelectedItems.length === 0) {
+    } else if (isRoomDataVisible && roomSelectedItems.length === 0) {
       validate = false;
       setErrorRoomType('*Please select any room type');
     } else if (rent.trim().length === 0) {
@@ -328,6 +326,31 @@ const DetailsScreen = props => {
 
     return validate;
   };
+
+  const newSelectedData = () => {
+    const selectSelectedItems = listSelectType.filter(item => item.isSelected);
+    const roomSelectedItems = listRoomType.filter(item => item.isSelected);
+    const areaSelectedItems = listAreaType.filter(item => item.isSelected);
+    const dietarySelectedItems = listDietaryType.filter(item => item.isSelected,);
+    const religionSelectedItems = listReligionType.filter(item => item.isSelected);
+
+    const selectedData = [];
+    selectedData.push({id: 1, title: 'Property Type', subTitle: selectSelectedItems[0].title})
+    if (roomSelectedItems.length > 0) {
+      selectedData.push({id: 2, title: 'Room Area', subTitle: roomSelectedItems[0].title})
+    }
+    selectedData.push(
+      {id: 3, title: 'Rent', subTitle: rent},
+      {id: 4, title: 'Deposite', subTitle: deposite},
+      {id: 5, title: 'Area Type', subTitle: areaSelectedItems[0].title},
+      {id: 6, title: 'Dietry Type', subTitle: dietarySelectedItems[0].title},
+      {id: 7, title: 'Religion Type', subTitle: religionSelectedItems[0].title}
+    )
+    setSelectedItems(selectedData)
+    setSelectTypeList(!selectTypeList);
+  }
+
+
   // ```
 
   const doCheckPermission = async id => {
@@ -357,7 +380,11 @@ const DetailsScreen = props => {
           setIsVisibleChooseImage(!isVisibleChooseImage);
           if (result.assets && result.assets.length > 0) {
             if (isEditProfile) {
-              setMainImage(result.assets[0].uri);
+              const image = {
+                image: result.assets[0].uri,
+                imageType: result.assets[0].type,
+              }
+              setMainImage(image);
             } else {
               const imageList = [...listImages];
               imageList.push({
@@ -386,7 +413,11 @@ const DetailsScreen = props => {
           setIsVisibleChooseImage(!isVisibleChooseImage);
           if (result.assets && result.assets.length > 0) {
             if (isEditProfile) {
-              setMainImage(result.assets[0].uri);
+              const image = {
+                image: result.assets[0].uri,
+                imageType: result.assets[0].type,
+              }
+              setMainImage(image);
             } else {
               const imageList = [...listImages];
               imageList.push({
@@ -476,14 +507,146 @@ const DetailsScreen = props => {
     return data;
   };
 
-  const doAddProperty = async () => {
+  const doAddImages = async () => {
     const isConnected = await isNetworkAvailable();
     setLoading(true);
 
     if (isConnected) {
       try {
+        const formData = new FormData();
+        listImages.forEach((image, index) => {
+          formData.append('images', {
+            uri: image.image,
+            type: image.imageType,
+            name: `image_${index}.jpg`,
+          });
+        });
+
+        const tokenTitle = AppConstants.AsyncKeyLiterals.token;
+        const token = await cacheData.getDataFromCachedWithKey(tokenTitle)
+        const _config = {
+          headers: { 'Content-Type': 'multipart/form-data', Authorization: token },
+          timeout: 6000,
+        };
+
+        const response = await uploadImages(_config, formData);
+
+        if (response && response.status) {
+          const responseImageList = response.data;
+          const finalImageList = [];
+          responseImageList.forEach(image => {
+            finalImageList.push(image.filename)
+          });
+          doAddMainImage(finalImageList);
+        } else {
+          setLoading(false);
+          const message = response.message;
+          RNToasty.Show({ title: message });
+          if (message === 'Invalid token') {
+            doLogout();
+          }
+        }
+      } catch (error) {
+        setLoading(false);
+        const message = error.message;
+        RNToasty.Show({ title: message });
+        if (message === 'Invalid token') {
+          doLogout();
+        }
+      }
+    } else {
+      setLoading(false);
+      RNToasty.Show({ title: 'No internet connection available!' });
+    }
+  };
+
+  const doAddMainImage = async (finalImageList) => {
+    const isConnected = await isNetworkAvailable();
+    setLoading(true);
+
+    if (isConnected) {
+      try {
+        if (!mainImage) {
+          setLoading(false);
+          RNToasty.Show({ title: 'Main image is missing!' });
+          return;
+        }
+        const formData = new FormData();
+        formData.append('main_image', {
+          uri: mainImage.image,
+          type: mainImage.imageType,
+          name: 'image_.jpg',
+        });
+
+        const tokenTitle = AppConstants.AsyncKeyLiterals.token;
+        const token = await cacheData.getDataFromCachedWithKey(tokenTitle)
+        const _config = {
+          headers: { 'Content-Type': 'multipart/form-data', Authorization: token },
+          timeout: 6000,
+        };
+
+        const response = await uploadImages(_config, formData);
+
+        if (response && response.status) {
+          const responseImageList = response.data;
+          let mainImage = '';
+          responseImageList.forEach(image => {
+            mainImage = image.filename
+          });
+          doAddProperty(finalImageList, mainImage);
+        } else {
+          setLoading(false);
+          const message = response.message;
+          RNToasty.Show({ title: message });
+          if (message === 'Invalid token') {
+            doLogout();
+          }
+        }
+      } catch (error) {
+        setLoading(false);
+        const message = error.message;
+        RNToasty.Show({ title: message });
+        if (message === 'Invalid token') {
+          doLogout();
+        }
+      }
+    } else {
+      setLoading(false);
+      RNToasty.Show({ title: 'No internet connection available!' });
+    }
+  };
+
+  const doAddProperty = async (responseImageList, mainImage) => {
+    const isConnected = await isNetworkAvailable();
+    setLoading(true);
+
+    const facility = listDataFacilities.map(item => item.title)
+    const advantages = listDataAdvantage.map(item => item.title)
+    const nearBy = listDataNearBy.map(item => item.title)
+
+    const titleToKeyMap = {
+      'Property Type': 'property_type',
+      'Room Area': 'room_type',
+      'Rent': 'rent_amount',
+      'Deposite': 'deposite_amount',
+      'Area Type': 'area_type',
+      'Dietry Type': 'diet_type',
+      'Religion Type': 'religion'
+    };
+    
+    const transformedData = selectedItems.reduce((acc, curr) => {
+      const key = titleToKeyMap[curr.title];
+      if (key) {
+        acc[key] = curr.subTitle;
+      }
+      return acc;
+    }, {});
+
+
+    if (isConnected) {
+      try {
         const propertyData = {
-          mainImage: mainImage,
+          main_image: mainImage,
           firstName: firstName,
           lastName: lastName,
           phone_number: mobileNo,
@@ -491,55 +654,53 @@ const DetailsScreen = props => {
           area: area,
           city: city,
           state: state,
-          home_details: listDataHome,
-          facilities: listDataFacilities,
-          advantages: listDataAdvantage,
-          near_by: listDataNearBy,
-          images: listImages,
+          home_details: transformedData,
+          facilities: facility,
+          advantages: advantages,
+          near_by: nearBy,
+          images: responseImageList,
         };
 
         const response = await property(propertyData);
         setLoading(false);
-
         if (response && response.status) {
+          setIsEdit(false);
           console.log('Property added successfully:', response.data);
           RNToasty.Show({ title: 'Property added successfully' });
-          setIsEdit(false);
         } else {
           const message = response.message;
-          RNToasty.Show({title: message});
-          if (message === 'Invalid Token') {
-            doLogout()
+          RNToasty.Show({ title: message });
+          if (message === 'Invalid token') {
+            doLogout();
           }
         }
       } catch (error) {
         setLoading(false);
         const message = error.message;
-        RNToasty.Show({title: message});
-        if (message === 'Invalid Token') {
-          doLogout()
+        RNToasty.Show({ title: message });
+        if (message === 'Invalid token') {
+          doLogout();
         }
       }
     } else {
       setLoading(false);
-      RNToasty.Show({title: 'No internet connection available!'});
+      RNToasty.Show({ title: 'No internet connection available!' });
     }
-  }
+  };
 
   const doLogout = () => {
-    const appData = AppConstants.AsyncKeyLiterals
-    cacheData.removeDataFromCachedWithKey(appData.isLoggedIn)
-    cacheData.removeDataFromCachedWithKey(appData.userData)
-    cacheData.removeDataFromCachedWithKey(appData.loginUserId)
-    cacheData.removeDataFromCachedWithKey(appData.token)
-    cacheData.removeDataFromCachedWithKey(appData.userType)
-
+    const appData = AppConstants.AsyncKeyLiterals;
+    cacheData.removeDataFromCachedWithKey(appData.isLoggedIn);
+    cacheData.removeDataFromCachedWithKey(appData.userData);
+    cacheData.removeDataFromCachedWithKey(appData.loginUserId);
+    cacheData.removeDataFromCachedWithKey(appData.token);
+    cacheData.removeDataFromCachedWithKey(appData.userType);
 
     props.navigation.reset({
       index: 0,
-      routes: [{ name: 'SplashScreen' }]
-    })
-  }
+      routes: [{ name: 'SplashScreen' }],
+    });
+  };
 
   return (
     <SafeAreaView style={styles.viewMainContainer}>
@@ -586,8 +747,8 @@ const DetailsScreen = props => {
               }}
               isLive={isLive}
               image={
-                mainImage
-                  ? mainImage
+                mainImage?.image
+                  ? mainImage?.image
                   : 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?q=80&w=1974&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D'
               }
               isEdit={isEdit}
@@ -718,7 +879,7 @@ const DetailsScreen = props => {
 
             <HomeDetails
               title={'Home Details'}
-              ListData={listDataHome}
+              ListData={selectedItems}
               isOwner={!isRental && isEdit}
               style={styles.viewHomeDetails}
               onPress={() => {
@@ -785,7 +946,9 @@ const DetailsScreen = props => {
                 title={'save'}
                 onPress={() => {
                   if (isValid()) {
-                    doAddProperty()
+                    // setIsEdit(false);
+                    doAddImages();
+                    // doAddProperty();
                   }
                 }}
               />
@@ -804,6 +967,7 @@ const DetailsScreen = props => {
             </View>
           ) : null}
         </KeyboardAwareScrollView>
+
         {isEdit === true ? (
           <Modal
             animationType="slide"
@@ -852,6 +1016,10 @@ const DetailsScreen = props => {
                               setIsRoomDataVisible(true);
                             } else {
                               setIsRoomDataVisible(false);
+
+                              const newList = [...listRoomType];
+                              newList.map(item => item.isSelected = false);
+                              setListRoomType(newList);
                             }
                           }
                         });
@@ -864,7 +1032,6 @@ const DetailsScreen = props => {
                         title={'Room'}
                         ListData={listRoomType}
                         roomData={isRoomDataVisible}
-                        showRentData={true}
                         onItemClick={mainId => {
                           const newList = [...listRoomType];
                           newList.map(item => {
@@ -878,15 +1045,26 @@ const DetailsScreen = props => {
                           setListRoomType(newList);
                         }}
                         error={errorRoomType}
-                        valueRent={rent}
-                        onChangeTextRent={setRent}
-                        errorRent={errorRent}
-                        valueDeposite={deposite}
-                        onChangeTextDeposite={setDeposite}
-                        errorDeposite={errorDeposite}
                       />
                     ) : null}
-
+                    <View style={styles.showRentData}>
+                      <InputText
+                        title={'Rent'}
+                        placeholder={'Enter the rent'}
+                        value={rent}
+                        keyboardType={'number-pad'}
+                        onChangeText={value => setRent(value)}
+                        error={errorRent}
+                      />
+                      <InputText
+                        title={'Deposite'}
+                        placeholder={'Enter the deposite'}
+                        value={deposite}
+                        keyboardType={'number-pad'}
+                        onChangeText={value => setDeposite(value)}
+                        error={errorDeposite}
+                      />
+                    </View>
                     <SelectListType
                       title={'Area Type'}
                       ListData={listAreaType}
@@ -904,6 +1082,7 @@ const DetailsScreen = props => {
                       }}
                       error={errorAreaType}
                     />
+
                     <SelectListType
                       title={'Dietary Preference'}
                       ListData={listDietaryType}
@@ -921,6 +1100,7 @@ const DetailsScreen = props => {
                       }}
                       error={errorDietaryType}
                     />
+
                     <SelectListType
                       title={'Religion'}
                       ListData={listReligionType}
@@ -938,6 +1118,7 @@ const DetailsScreen = props => {
                       }}
                       error={errorReligionType}
                     />
+
                   </KeyboardAwareScrollView>
                   <View
                     style={{
@@ -951,7 +1132,10 @@ const DetailsScreen = props => {
                       textStyle={styles.textDoneButton}
                       onPress={() => {
                         if (selectTypeClick()) {
-                          setSelectTypeList(!selectTypeList);
+                          newSelectedData();
+                          // console.log('====================================');
+                          // console.log('Selected data:', selectedData);
+                          // console.log('====================================');
                         }
                       }}
                     />
@@ -1004,6 +1188,7 @@ const DetailsScreen = props => {
               }}
               onDone={() => {
                 if (isValidAddFacilities()) {
+                  setListDataFacilities(listFacilities);
                   setIsVisibleFacilities(!isVisibleFacilities);
                 }
               }}
@@ -1052,6 +1237,7 @@ const DetailsScreen = props => {
             }}
             onDone={() => {
               if (isValidAddAdvantages()) {
+                setListDataAdvantage(listAdvantages)
                 setIsVisibleAdvantages(!isVisibleAdvantages);
               }
             }}
@@ -1099,6 +1285,7 @@ const DetailsScreen = props => {
             }}
             onDone={() => {
               if (isValidAddNearBy()) {
+                setListDataNearBy(listNearBy)
                 setIsVisibleNearBy(!isVisibleNearBy);
               }
             }}

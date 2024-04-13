@@ -23,8 +23,8 @@ const LoginScreen = props => {
   // All states
   const [loading, setLoading] = useState(false)
   // ## Main states
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('ashishpipaliya78@yopmail.com');
+  const [password, setPassword] = useState('!!P@ssw0rd!!');
   const [isCheck, setIsCheck] = useState(false);
   const [secure, setIsSecure] = useState(false);
   // ## Error states

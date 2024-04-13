@@ -159,6 +159,9 @@ const styles = StyleSheet.create({
   scrollView:{
     flexGrow:1,
   },
+  showRentData:{
+    marginTop:Theme.responsiveSize.size10
+  },
   viewDoneButton:{
     paddingHorizontal: Theme.responsiveSize.size25,
     marginTop: Theme.responsiveSize.size20,

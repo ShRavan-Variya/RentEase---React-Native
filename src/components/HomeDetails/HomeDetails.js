@@ -1,8 +1,8 @@
 import React from 'react';
-import {Image, Text, TouchableOpacity, View} from 'react-native';
-import styles from './styles';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 import HomeInnerDetails from './HomeInnerDetails';
 import Theme from '../../theme/Theme';
+import styles from './styles';
 
 const HomeDetails = props => {
   const renderMainItem = (item, index) => {
@@ -28,7 +28,7 @@ const HomeDetails = props => {
       </View>
       <View style={styles.viewFWrap}>{props.ListData.map(renderMainItem)}</View>
       {props.error ? (
-      <Text style={styles.textError}>{props.error}</Text>
+        <Text style={styles.textError}>{props.error}</Text>
       ) : null}
     </View>
 
