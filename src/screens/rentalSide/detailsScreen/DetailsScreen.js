@@ -40,7 +40,7 @@ const DetailsScreen = props => {
   const [listDataAdvantage, setListDataAdvantage] = useState([]);
   const [listDataNearBy, setListDataNearBy] = useState([]);
   //Main States
-  const [mainImage, setMainImage] = useState(null);
+  const [mainImage, setMainImage] = useState();
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [mobileNo, setMobileNo] = useState('');
@@ -572,9 +572,9 @@ const DetailsScreen = props => {
           return;
         }
         const formData = new FormData();
-        formData.append('main_image', {
-          uri: mainImage.image,
-          type: mainImage.imageType,
+        formData.append('images', {
+          uri: mainImage?.image,
+          type: mainImage?.imageType,
           name: 'image_.jpg',
         });
 
