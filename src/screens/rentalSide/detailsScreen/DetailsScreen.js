@@ -30,15 +30,21 @@ import { AppConstants, cacheData } from '../../../module';
 import { isNetworkAvailable } from '../../../api';
 import { Loader } from '../../../components/Loader';
 import { RNToasty } from 'react-native-toasty';
-import { property, uploadImages, uploadMainImage } from '../../../services/auth';
+import { getPropertyList, property, uploadImages } from '../../../services/auth';
+import { useNavigation } from '@react-navigation/native';
+import { API_BASE_URL } from '../../../api/api';
 
 const DetailsScreen = props => {
+  const navigation = useNavigation();
   //All States
   const [loading, setLoading] = useState(false);
+  const [itemId, setItemId] = useState();
+  const [propertyData, setPropertyData] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [listDataFacilities, setListDataFacilities] = useState([]);
   const [listDataAdvantage, setListDataAdvantage] = useState([]);
   const [listDataNearBy, setListDataNearBy] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
   //Main States
   const [mainImage, setMainImage] = useState();
   const [firstName, setFirstName] = useState('');
@@ -106,29 +112,16 @@ const DetailsScreen = props => {
   const [isVisibleChooseImage, setIsVisibleChooseImage] = useState(false);
 
   useEffect(() => {
-    const { isFromAdd, isLive } = props.route.params;
-    setIsEdit(isFromAdd);
-    setIsLive(isLive);
-    doGetData();
+    const { id } = props.route.params;
+    setItemId(id)
+    doGetData(id);
   }, []);
 
-  const doGetData = async () => {
+  const doGetData = async (id) => {
     const userType = await cacheData.getDataFromCachedWithKey(
       AppConstants.AsyncKeyLiterals.userType,
     );
     setIsRental(userType === 2);
-
-    // const homeDetailsItem = defaultPopupData.homeDetails;
-    // setListDataHome(homeDetailsItem);
-
-    // const facilitiesItem = defaultPopupData.facilities;
-    // setListDataFacilities(facilitiesItem);
-
-    // const advantagesItem = defaultPopupData.advantages;
-    // setListDataAdvantage(advantagesItem);
-
-    // const nearByItem = defaultPopupData.nearBy;
-    // setListDataNearBy(nearByItem);
 
     const selectTypeData = defaultPopupData.selectType;
     setListSelectType(selectTypeData);
@@ -144,6 +137,45 @@ const DetailsScreen = props => {
 
     const religionTypeData = defaultPopupData.religionType;
     setListReligionType(religionTypeData);
+
+    doGetItemData(id);
+  };
+
+  const doGetItemData = async (id) => {
+    const isConnected = await isNetworkAvailable();
+    setLoading(true);
+
+    if (isConnected) {
+      try {
+        
+
+        const response = await getPropertyList(id);
+        setLoading(false);
+        if (response && response.status) {
+          const propertyData = response.data;
+
+          setMainImage({image: `${API_BASE_URL}uploads/${propertyData.main_image}`})
+
+
+        } else {
+          const message = response.message;
+          RNToasty.Show({ title: message });
+          if (message === 'Invalid token') {
+            doLogout();
+          }
+        }
+      } catch (error) {
+        setLoading(false);
+        const message = error.message;
+        RNToasty.Show({ title: message });
+        if (message === 'Invalid token') {
+          doLogout();
+        }
+      }
+    } else {
+      setLoading(false);
+      RNToasty.Show({ title: 'No internet connection available!' });
+    }
   };
 
   const isValid = () => {
@@ -335,16 +367,16 @@ const DetailsScreen = props => {
     const religionSelectedItems = listReligionType.filter(item => item.isSelected);
 
     const selectedData = [];
-    selectedData.push({id: 1, title: 'Property Type', subTitle: selectSelectedItems[0].title})
+    selectedData.push({ id: 1, title: 'Property Type', subTitle: selectSelectedItems[0].title })
     if (roomSelectedItems.length > 0) {
-      selectedData.push({id: 2, title: 'Room Area', subTitle: roomSelectedItems[0].title})
+      selectedData.push({ id: 2, title: 'Room Area', subTitle: roomSelectedItems[0].title })
     }
     selectedData.push(
-      {id: 3, title: 'Rent', subTitle: rent},
-      {id: 4, title: 'Deposite', subTitle: deposite},
-      {id: 5, title: 'Area Type', subTitle: areaSelectedItems[0].title},
-      {id: 6, title: 'Dietry Type', subTitle: dietarySelectedItems[0].title},
-      {id: 7, title: 'Religion Type', subTitle: religionSelectedItems[0].title}
+      { id: 3, title: 'Rent', subTitle: rent },
+      { id: 4, title: 'Deposite', subTitle: deposite },
+      { id: 5, title: 'Area Type', subTitle: areaSelectedItems[0].title },
+      { id: 6, title: 'Dietry Type', subTitle: dietarySelectedItems[0].title },
+      { id: 7, title: 'Religion Type', subTitle: religionSelectedItems[0].title }
     )
     setSelectedItems(selectedData)
     setSelectTypeList(!selectTypeList);
@@ -593,6 +625,7 @@ const DetailsScreen = props => {
           responseImageList.forEach(image => {
             mainImage = image.filename
           });
+          setSelectedImage(mainImage);
           doAddProperty(finalImageList, mainImage);
         } else {
           setLoading(false);
@@ -633,7 +666,7 @@ const DetailsScreen = props => {
       'Dietry Type': 'diet_type',
       'Religion Type': 'religion'
     };
-    
+
     const transformedData = selectedItems.reduce((acc, curr) => {
       const key = titleToKeyMap[curr.title];
       if (key) {
@@ -665,7 +698,7 @@ const DetailsScreen = props => {
         setLoading(false);
         if (response && response.status) {
           setIsEdit(false);
-          console.log('Property added successfully:', response.data);
+          console.log('Property added successfully:');
           RNToasty.Show({ title: 'Property added successfully' });
         } else {
           const message = response.message;

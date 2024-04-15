@@ -20,3 +20,10 @@ export async function uploadImages(_config, data) {
   const res = await API.post('upload', data, _config);
   return res.data;
 }
+
+export async function getPropertyList(){
+  const res = await API.get('get_user_property');
+  return res.data;
+}
+
+
