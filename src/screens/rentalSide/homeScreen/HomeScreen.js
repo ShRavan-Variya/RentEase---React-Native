@@ -14,7 +14,6 @@ const HomeScreen = props => {
   const [loading, setLoading] = useState(false);
   const [listOfHomes, setListOfHomes] = useState([]);
   const [isRental, setIsRental] = useState(true);
-  const [mainImage, setMainImage] = useState('');
 
   useEffect(() => {
     doGetHomeList();
@@ -80,15 +79,19 @@ const HomeScreen = props => {
     
     return (
       <HomeCard
-        id={item.property_id}
         image={item.main_image}
-        address={item.address}
-        mobile={item.phone_number}
-        userName={item.userName}
+        addressLine1={item.address_line1}
+        addressLine2={item.address_line2}
+        area={item.area}
+        city={item.city}
+        state={item.state}
+        phone_number={item.phone_number}
+        firstName={item.firstName}
+        lastName={item.lastName}
         isLive={isRental ? false : item.isLive}
         onClick={() => {
           props.navigation.navigate('DetailsScreen', {
-            id:item.property_id
+            id:item._id
           });
         }}
       />

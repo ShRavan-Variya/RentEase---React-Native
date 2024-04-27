@@ -30,7 +30,7 @@ import { AppConstants, cacheData } from '../../../module';
 import { isNetworkAvailable } from '../../../api';
 import { Loader } from '../../../components/Loader';
 import { RNToasty } from 'react-native-toasty';
-import { getPropertyList, property, uploadImages } from '../../../services/auth';
+import { getPropertyDetails, property, uploadImages } from '../../../services/auth';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../../../api/api';
 
@@ -39,7 +39,7 @@ const DetailsScreen = props => {
   //All States
   const [loading, setLoading] = useState(false);
   const [itemId, setItemId] = useState();
-  const [propertyData, setPropertyData] = useState([]);
+  const [listDataHome, setListDataHome] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [listDataFacilities, setListDataFacilities] = useState([]);
   const [listDataAdvantage, setListDataAdvantage] = useState([]);
@@ -47,9 +47,13 @@ const DetailsScreen = props => {
   const [selectedImage, setSelectedImage] = useState(null);
   //Main States
   const [mainImage, setMainImage] = useState();
+  const [userName, setUserName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [mobileNo, setMobileNo] = useState('');
+  const [fullAddress, setFullAddress] = useState('');
+  const [addressLine1, setAddressLine1] = useState('');
+  const [addressLine2, setAddressLine2] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [area, setArea] = useState('');
@@ -65,6 +69,8 @@ const DetailsScreen = props => {
   const [errorFirstName, setErrorFirstName] = useState('');
   const [errorLastName, setErrorLastName] = useState('');
   const [errorMobileNo, setErrorMobileNo] = useState('');
+  const [errorAddressLine1, setErrorAddressLine1] = useState('');
+  const [errorAddressLine2, setErrorAddressLine2] = useState('');
   const [errorCity, setErrorCity] = useState('');
   const [errorState, setErrorState] = useState('');
   const [errorArea, setErrorArea] = useState('');
@@ -147,17 +153,36 @@ const DetailsScreen = props => {
 
     if (isConnected) {
       try {
-        
 
-        const response = await getPropertyList(id);
+
+        const response = await getPropertyDetails(id);
         setLoading(false);
         if (response && response.status) {
           const propertyData = response.data;
 
-          setMainImage({image: `${API_BASE_URL}uploads/${propertyData.main_image}`})
-
+          setMainImage({ image: `${API_BASE_URL}uploads/${propertyData.main_image}` })
+          setUserName(`${propertyData.firstName} ${propertyData.lastName}`)
+          setMobileNo(`${propertyData.phone_number}`)
+          setFullAddress(`${propertyData.address_line1} ${propertyData.address_line2} ${propertyData.area} ${propertyData.city} ${propertyData.state}`)
+          setSelectedItems([
+            { title: 'Property Type', subTitle: propertyData.home_details.property_type },
+            { title: 'Room Type', subTitle: propertyData.home_details.room_type },
+            { title: 'Rent', subTitle: propertyData.home_details.rent_amount.toString() },
+            { title: 'Deposite', subTitle: propertyData.home_details.deposite_amount.toString() },
+            { title: 'Area Type', subTitle: propertyData.home_details.area_type },
+            { title: 'Dietry Type', subTitle: propertyData.home_details.diet_type },
+            { title: 'Religion Type', subTitle: propertyData.home_details.religion },
+          ]);
+          setListDataFacilities(propertyData.facilities.map(title => ({title})))
+          setListDataAdvantage(propertyData.advantages.map(title => ({title})))
+          setListDataNearBy(propertyData.near_by.map(title => ({title})))
+          setListImages(propertyData.images.map(images=>`${images}`))
+          console.log('====================================');
+          console.log('images::',JSON.stringify(listImages));
+          console.log('====================================');
 
         } else {
+          setLoading(false);
           const message = response.message;
           RNToasty.Show({ title: message });
           if (message === 'Invalid token') {
@@ -810,7 +835,7 @@ const DetailsScreen = props => {
             ) : (
               <UserInfo
                 image={Theme.icons.UserIcon}
-                title={'Ashish Pipaliya'}
+                title={userName}
                 styleText={styles.textUserInfoStyle}
                 viewMain={styles.viewUserInfo}
               />
@@ -826,7 +851,7 @@ const DetailsScreen = props => {
             ) : (
               <UserInfo
                 image={Theme.icons.MobileIcon}
-                title={'+91 63543 48235'}
+                title={`+91 ${mobileNo}`}
                 styleText={styles.textUserInfoStyle}
                 viewMain={styles.viewUserInfo}
               />
@@ -872,6 +897,20 @@ const DetailsScreen = props => {
             {isEdit === true ? (
               <View>
                 <InputText
+                  title={'Address Line1'}
+                  placeholder={'Enter your addres'}
+                  value={addressLine1}
+                  onChangeText={setAddressLine1}
+                  error={errorAddressLine1}
+                />
+                <InputText
+                  title={'Address Line2'}
+                  placeholder={'Enter your address'}
+                  value={addressLine2}
+                  onChangeText={setAddressLine2}
+                  error={errorAddressLine2}
+                />
+                <InputText
                   title={'Area'}
                   placeholder={'Enter your area'}
                   value={area}
@@ -902,9 +941,7 @@ const DetailsScreen = props => {
             ) : (
               <UserInfo
                 image={Theme.icons.LocationIcon}
-                title={
-                  'B-101, ShantiKunj App., Akhand-Anand Soc., Dabholi Road, Katargam, Surat.'
-                }
+                title={fullAddress}
                 styleText={styles.textUserInfoStyle}
                 viewMain={styles.viewUserInfo}
               />

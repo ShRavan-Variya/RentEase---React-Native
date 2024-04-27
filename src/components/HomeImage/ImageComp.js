@@ -9,7 +9,7 @@ const ImageComp = props => {
     <ImageBackground
       style={styles.homeImage}
       borderRadius={Theme.responsiveSize.size03}
-      source={{uri: props.image}}
+      source={{uri:props.image}}
       resizeMode={'cover'}>
       {props.isEdit === true ? (
         <LinearGradient

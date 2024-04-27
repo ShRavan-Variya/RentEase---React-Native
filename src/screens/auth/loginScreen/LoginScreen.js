@@ -64,6 +64,9 @@ const LoginScreen = props => {
           password: password,
         }
         const response = await login(data);
+        console.log('====================================');
+        console.log("response::",JSON.stringify(response));
+        console.log('====================================');
         setLoading(false);
         if (response && response.status) {
           const data = response.data
@@ -86,11 +89,15 @@ const LoginScreen = props => {
             });
           }
         } else {
+          setLoading(false);
           const message = response.message;
           RNToasty.Show({title: message});
         }
       } catch (error) {
         setLoading(false);
+        console.log('====================================');
+        console.log("error::",JSON.stringify(error));
+        console.log('====================================');
         RNToasty.Show({title: error.message});
       }
     } else {

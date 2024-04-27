@@ -15,7 +15,6 @@ const HomeDetails = props => {
       />
     );
   };
-
   return (
     <View style={props.style}>
       <View style={styles.viewRow}>
@@ -31,7 +30,6 @@ const HomeDetails = props => {
         <Text style={styles.textError}>{props.error}</Text>
       ) : null}
     </View>
-
   );
 };
 

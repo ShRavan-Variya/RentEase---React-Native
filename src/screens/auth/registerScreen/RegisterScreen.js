@@ -113,6 +113,9 @@ const RegisterScreen = props => {
           phone_number: mobileNo,
         }
         const response = await register(data);
+          console.log('====================================');
+          console.log("message:::",JSON.stringify(response));
+          console.log('====================================');
         setLoading(false);
         if (response && response.status) {
           const data = response.data
@@ -136,11 +139,15 @@ const RegisterScreen = props => {
             });
           }
         } else {
+          setLoading(false);
           const message = response.message;
           RNToasty.Show({title: message});
         }
       } catch (error) {
         setLoading(false);
+        console.log('====================================');
+        console.log("error::",JSON.stringify(error));
+        console.log('====================================');
         RNToasty.Show({title: error.message});
       }
     } else {
@@ -288,7 +295,7 @@ const RegisterScreen = props => {
                 <Text
                   style={styles.textBold}
                   onPress={() => {
-                    props.navigation.navigate('PreferenceScreen');
+                    props.navigation.navigate('LoginScreen');
                   }}>
                   {' '}
                   Log In

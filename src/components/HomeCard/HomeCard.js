@@ -6,9 +6,6 @@ import UserInfo from '../UserInfo/UserInfo';
 import { API_BASE_URL } from '../../api/api';
 
 const HomeCard = props => {
-  console.log('====================================');
-  console.log("props.image::", JSON.stringify(props.image));
-  console.log('====================================');
   return (
     <TouchableOpacity style={styles.viewMain} onPress={props.onClick}>
       <Image style={styles.homeImage} source={{uri: `${API_BASE_URL}uploads/${props.image}`}} />
@@ -21,18 +18,18 @@ const HomeCard = props => {
       
       <UserInfo
         image={Theme.icons.LocationIcon}
-        title={'B-101, ShantiKunj App., Akhand-Anand Soc., Dabholi Road, Katargam, Surat.'}
+        title={`${props.addressLine1} ` + `${props.addressLine2} ` + `${props.area} ` + `${props.city} ` + `${props.state} `}
       />
       <View style={styles.viewRow}>
         <UserInfo
           image={Theme.icons.MobileIcon}
-          title={'+91 63543 48235'}
+          title={`${props.firstName} ` + `${props.lastName} `}
           styleImage={styles.mobileIcon}
           styleText={styles.textSubTitle}
         />
         <UserInfo
           image={Theme.icons.UserIcon}
-          title={'Ashish Pipaliya'}
+          title={`+91 ${props.phone_number}`}
           styleImage={styles.userIcon}
           styleText={styles.textSubTitle}
         />

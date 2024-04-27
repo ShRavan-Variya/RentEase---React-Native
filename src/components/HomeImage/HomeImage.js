@@ -3,13 +3,14 @@ import {Image, Text, TouchableOpacity, View} from 'react-native';
 import styles from './styles';
 import ImageComp from './ImageComp';
 import Theme from '../../theme/Theme';
+import { API_BASE_URL } from '../../api/api';
 
 const HomeImage = props => {
   const renderMainItem = (item, index) => {
     return (
       <View key={index}>
         <ImageComp
-          image={item.image}
+          image={`${API_BASE_URL}uploads/${item.images}`}
           isEdit={props.isEdit}
           onPressDelete={() => {
             props.onPressDelete(index);
