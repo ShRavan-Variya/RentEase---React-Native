@@ -10,7 +10,7 @@ const HomeImage = props => {
     return (
       <View key={index}>
         <ImageComp
-          image={`${API_BASE_URL}uploads/${item.images}`}
+          image={item.isLocal ? item.image : `${API_BASE_URL}uploads/${item}`}
           isEdit={props.isEdit}
           onPressDelete={() => {
             props.onPressDelete(index);

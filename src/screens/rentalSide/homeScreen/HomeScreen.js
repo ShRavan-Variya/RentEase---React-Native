@@ -8,7 +8,7 @@ import { AppConstants, cacheData } from '../../../module';
 import { Loader } from '../../../components/Loader';
 import { RNToasty } from 'react-native-toasty';
 import { isNetworkAvailable } from '../../../api';
-import { getPropertyList } from '../../../services/auth';
+import { getOwnerPropertyList, getPropertyList } from '../../../services/auth';
 
 const HomeScreen = props => {
   const [loading, setLoading] = useState(false);
@@ -23,11 +23,51 @@ const HomeScreen = props => {
     const userType = await cacheData.getDataFromCachedWithKey(
       AppConstants.AsyncKeyLiterals.userType,
     );
+    const userId = await cacheData.getDataFromCachedWithKey(
+      AppConstants.AsyncKeyLiterals.loginUserId,
+    );
     setIsRental(userType === 2);
     if (userType === 2) {
       doGetListOfProperty();
+    }else {
+      doGetUserProperty(userId);
     }
   };
+  
+  const doGetUserProperty = async (userId)=> {
+    const isConnected = await isNetworkAvailable();
+    setLoading(true);
+    if (isConnected) {
+      try {
+        const response = await getOwnerPropertyList(userId);
+        console.log('====================================');
+        console.log("response::",JSON.stringify(response));
+        console.log('====================================');
+        setLoading(false);
+        if (response && response.status) {
+          const data = response.data
+          setListOfHomes(data)
+        } else {
+          setLoading(false);
+          const message = response.message;
+          RNToasty.Show({ title: message });
+          if (message === 'Invalid token') {
+            doLogout();
+          }
+        }
+      } catch (error) {
+        setLoading(false);
+        const message = error.message;
+        RNToasty.Show({ title: message });
+        if (message === 'Invalid token') {
+          doLogout();
+        }
+      }
+    } else {
+      setLoading(false);
+      RNToasty.Show({ title: 'No internet connection available!' });
+    }
+  }
 
   const doGetListOfProperty = async () => {
     const isConnected = await isNetworkAvailable();
@@ -76,7 +116,6 @@ const HomeScreen = props => {
   };
 
   const renderListHomes = ({ item, index }) => {
-    
     return (
       <HomeCard
         image={item.main_image}
@@ -91,7 +130,7 @@ const HomeScreen = props => {
         isLive={isRental ? false : item.isLive}
         onClick={() => {
           props.navigation.navigate('DetailsScreen', {
-            id:item._id
+            id:item._id, isFromAdd: false
           });
         }}
       />
@@ -108,7 +147,7 @@ const HomeScreen = props => {
             if (isRental) {
               props.navigation.navigate('PreferenceScreen', { fromDash: true });
             } else {
-              props.navigation.navigate('DetailsScreen', { isFromAdd: true });
+              props.navigation.navigate('DetailsScreen', { id: null, isFromAdd: true });
             }
           }}
           ProfileIcon={true}

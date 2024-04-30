@@ -39,7 +39,6 @@ const DetailsScreen = props => {
   //All States
   const [loading, setLoading] = useState(false);
   const [itemId, setItemId] = useState();
-  const [listDataHome, setListDataHome] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
   const [listDataFacilities, setListDataFacilities] = useState([]);
   const [listDataAdvantage, setListDataAdvantage] = useState([]);
@@ -52,8 +51,8 @@ const DetailsScreen = props => {
   const [lastName, setLastName] = useState('');
   const [mobileNo, setMobileNo] = useState('');
   const [fullAddress, setFullAddress] = useState('');
-  const [addressLine1, setAddressLine1] = useState('');
-  const [addressLine2, setAddressLine2] = useState('');
+  const [address_line1, setAddress_line1] = useState('');
+  const [address_line2, setAddress_line2] = useState('');
   const [city, setCity] = useState('');
   const [state, setState] = useState('');
   const [area, setArea] = useState('');
@@ -69,8 +68,8 @@ const DetailsScreen = props => {
   const [errorFirstName, setErrorFirstName] = useState('');
   const [errorLastName, setErrorLastName] = useState('');
   const [errorMobileNo, setErrorMobileNo] = useState('');
-  const [errorAddressLine1, setErrorAddressLine1] = useState('');
-  const [errorAddressLine2, setErrorAddressLine2] = useState('');
+  const [errorAddress_line1, setErrorAddress_line1] = useState('');
+  const [errorAddress_line2, setErrorAddress_line2] = useState('');
   const [errorCity, setErrorCity] = useState('');
   const [errorState, setErrorState] = useState('');
   const [errorArea, setErrorArea] = useState('');
@@ -118,12 +117,20 @@ const DetailsScreen = props => {
   const [isVisibleChooseImage, setIsVisibleChooseImage] = useState(false);
 
   useEffect(() => {
-    const { id } = props.route.params;
+    const { id, isFromAdd } = props.route.params;
+    console.log('====================================');
+    console.log(id, isFromAdd);
+    console.log('====================================');
     setItemId(id)
-    doGetData(id);
+    doGetData();
+    if (isFromAdd) {
+      setIsEdit(true)
+    } else if (id !== undefined && id !== null) {
+      doGetItemData(id);
+    }
   }, []);
 
-  const doGetData = async (id) => {
+  const doGetData = async () => {
     const userType = await cacheData.getDataFromCachedWithKey(
       AppConstants.AsyncKeyLiterals.userType,
     );
@@ -143,8 +150,6 @@ const DetailsScreen = props => {
 
     const religionTypeData = defaultPopupData.religionType;
     setListReligionType(religionTypeData);
-
-    doGetItemData(id);
   };
 
   const doGetItemData = async (id) => {
@@ -177,9 +182,6 @@ const DetailsScreen = props => {
           setListDataAdvantage(propertyData.advantages.map(title => ({title})))
           setListDataNearBy(propertyData.near_by.map(title => ({title})))
           setListImages(propertyData.images.map(images=>`${images}`))
-          console.log('====================================');
-          console.log('images::',JSON.stringify(listImages));
-          console.log('====================================');
 
         } else {
           setLoading(false);
@@ -209,6 +211,8 @@ const DetailsScreen = props => {
     setErrorFirstName('');
     setErrorLastName('');
     setErrorMobileNo('');
+    setErrorAddress_line1('');
+    setErrorAddress_line2('');
     setErrorArea('');
     setErrorCity('');
     setErrorState('');
@@ -227,6 +231,12 @@ const DetailsScreen = props => {
     } else if (mobileNo.trim().length !== 10) {
       validate = false;
       setErrorMobileNo('*Mobile number must have 10 numbers');
+    } else if (address_line1.trim().length === 0) {
+      validate = false;
+      setErrorAddress_line1('*Please enter the address_line1!');
+    } else if (address_line1.trim().length === 0) {
+      validate = false;
+      setErrorAddress_line2('*Please enter the address_line2!');
     } else if (area.trim().length === 0) {
       validate = false;
       setErrorArea('*Please enter your area!');
@@ -448,6 +458,7 @@ const DetailsScreen = props => {
                 id: listImages.length + 1,
                 image: result.assets[0].uri,
                 imageType: result.assets[0].type,
+                isLocal: true
               });
               setListImages(imageList);
             }
@@ -481,6 +492,7 @@ const DetailsScreen = props => {
                 id: listImages.length + 1,
                 image: result.assets[0].uri,
                 imageType: result.assets[0].type,
+                isLocal: true
               });
               setListImages(imageList);
             }
@@ -709,6 +721,8 @@ const DetailsScreen = props => {
           lastName: lastName,
           phone_number: mobileNo,
           isLive: isLive,
+          address_line1:address_line1,
+          address_line2:address_line2,
           area: area,
           city: city,
           state: state,
@@ -899,16 +913,16 @@ const DetailsScreen = props => {
                 <InputText
                   title={'Address Line1'}
                   placeholder={'Enter your addres'}
-                  value={addressLine1}
-                  onChangeText={setAddressLine1}
-                  error={errorAddressLine1}
+                  value={address_line1}
+                  onChangeText={setAddress_line1}
+                  error={errorAddress_line1}
                 />
                 <InputText
                   title={'Address Line2'}
                   placeholder={'Enter your address'}
-                  value={addressLine2}
-                  onChangeText={setAddressLine2}
-                  error={errorAddressLine2}
+                  value={address_line2}
+                  onChangeText={setAddress_line2}
+                  error={errorAddress_line2}
                 />
                 <InputText
                   title={'Area'}

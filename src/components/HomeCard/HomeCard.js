@@ -1,5 +1,5 @@
 import React from 'react';
-import {Image,Text,TouchableOpacity, View} from 'react-native';
+import { Image, Text, TouchableOpacity, View } from 'react-native';
 import styles from './styles';
 import Theme from '../../theme/Theme';
 import UserInfo from '../UserInfo/UserInfo';
@@ -8,14 +8,14 @@ import { API_BASE_URL } from '../../api/api';
 const HomeCard = props => {
   return (
     <TouchableOpacity style={styles.viewMain} onPress={props.onClick}>
-      <Image style={styles.homeImage} source={{uri: `${API_BASE_URL}uploads/${props.image}`}} />
+      <Image style={styles.homeImage} source={{ uri: `${API_BASE_URL}uploads/${props.image}` }} />
 
       {props.isLive ? (
         <View style={styles.viewContainer}>
-        <Text style={styles.textTitle}>Live</Text>
-      </View>
+          <Text style={styles.textTitle}>Live</Text>
+        </View>
       ) : null}
-      
+
       <UserInfo
         image={Theme.icons.LocationIcon}
         title={`${props.addressLine1} ` + `${props.addressLine2} ` + `${props.area} ` + `${props.city} ` + `${props.state} `}

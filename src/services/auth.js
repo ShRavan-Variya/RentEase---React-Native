@@ -26,6 +26,11 @@ export async function getPropertyList(){
   return res.data;
 }
 
+export async function getOwnerPropertyList(userId){
+  const res = await API.get(`get_owner_property?owner_id=${userId}`);
+  return res.data;
+}
+
 export async function getPropertyDetails(id){
   const res = await API.get(`get_property_details?property_id=${id}`);
   return res.data;

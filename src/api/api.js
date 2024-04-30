@@ -5,6 +5,7 @@ import axios from 'axios';
 
 let token;
 
+// export const API_BASE_URL = 'https://mern-demo-rentease-production.up.railway.app/api';
 export const API_BASE_URL = 'http://192.168.1.5:5000/api/';
 
 export const API = axios.create({
@@ -14,8 +15,6 @@ export const API = axios.create({
 
 API.interceptors.request.use(
   function (_config) {
-    // _config.headers['Content-Type'] = 'application/json';
-
     if (token !== null && token !== '') {
       _config.headers.authorization = token;
     }
@@ -23,11 +22,6 @@ API.interceptors.request.use(
     if (_config.headers['Content-Type'] !== 'multipart/form-data') {
       _config.headers['Content-Type'] = 'application/json';
     }
-
-    // console.log('====================================');
-    // console.log('_config :: ', JSON.stringify(_config));
-    // console.log('====================================');
-
     return _config;
   },
   function (error) {
