@@ -130,7 +130,7 @@ const HomeScreen = props => {
         isLive={isRental ? false : item.isLive}
         onClick={() => {
           props.navigation.navigate('DetailsScreen', {
-            id:item._id, isFromAdd: false
+            id:item._id, isFromAdd: false, userId: item.owner_id, 
           });
         }}
       />
@@ -147,7 +147,7 @@ const HomeScreen = props => {
             if (isRental) {
               props.navigation.navigate('PreferenceScreen', { fromDash: true });
             } else {
-              props.navigation.navigate('DetailsScreen', { id: null, isFromAdd: true });
+              props.navigation.navigate('DetailsScreen', { id: null, userId: null, isFromAdd: true });
             }
           }}
           ProfileIcon={true}

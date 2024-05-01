@@ -36,4 +36,13 @@ export async function getPropertyDetails(id){
   return res.data;
 }
 
+export async function putPropertyList(id, userId, updatedData){
+  const res = await API.get(`edit_property_data?property_id=${id}&owner_id=${userId}`, updatedData);
+  return res.data;
+}
+
+export async function updateImages(imageList) {
+  const res = await API.get(`update_images`, imageList);
+  return res.data;
+}
 

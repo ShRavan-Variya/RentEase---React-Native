@@ -11,26 +11,17 @@ import { HomeImage } from '../../../components/HomeImage';
 import ImageOfHome from '../../../components/Image/ImageOfHome';
 import { InputText } from '../../../components/InputText';
 import CustomSelect from '../../../components/CustomSelect/CustomSelect';
-import {
-  CustomMenu,
-  CustomMenuFacilities,
-  SelectListType,
-} from '../../../components/CustomMenu';
+import { CustomMenu, CustomMenuFacilities, SelectListType, } from '../../../components/CustomMenu';
 import { Button } from '../../../components/Button';
 import defaultPopupData from '../../../defaultData/defaultPopupData';
-import {
-  PERMISSIONS,
-  RESULTS,
-  checkMultiple,
-  requestMultiple,
-} from 'react-native-permissions';
+import { PERMISSIONS, RESULTS, checkMultiple, } from 'react-native-permissions';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import { TouchableOpacity } from 'react-native';
 import { AppConstants, cacheData } from '../../../module';
 import { isNetworkAvailable } from '../../../api';
 import { Loader } from '../../../components/Loader';
 import { RNToasty } from 'react-native-toasty';
-import { getPropertyDetails, property, uploadImages } from '../../../services/auth';
+import { getPropertyDetails, property, putPropertyList, uploadImages } from '../../../services/auth';
 import { useNavigation } from '@react-navigation/native';
 import { API_BASE_URL } from '../../../api/api';
 
@@ -44,6 +35,8 @@ const DetailsScreen = props => {
   const [listDataAdvantage, setListDataAdvantage] = useState([]);
   const [listDataNearBy, setListDataNearBy] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [ownerId, setOwnerId] = useState(null);
+  const [propertyId, setPropertyId] = useState(null);
   //Main States
   const [mainImage, setMainImage] = useState();
   const [userName, setUserName] = useState('');
@@ -117,17 +110,15 @@ const DetailsScreen = props => {
   const [isVisibleChooseImage, setIsVisibleChooseImage] = useState(false);
 
   useEffect(() => {
-    const { id, isFromAdd } = props.route.params;
-    console.log('====================================');
-    console.log(id, isFromAdd);
-    console.log('====================================');
-    setItemId(id)
+    const { id, isFromAdd, userId } = props.route.params;
+    setItemId(id);
     doGetData();
     if (isFromAdd) {
-      setIsEdit(true)
+      setIsEdit(true);
     } else if (id !== undefined && id !== null) {
       doGetItemData(id);
-    }
+    } 
+    
   }, []);
 
   const doGetData = async () => {
@@ -150,9 +141,68 @@ const DetailsScreen = props => {
 
     const religionTypeData = defaultPopupData.religionType;
     setListReligionType(religionTypeData);
+    
   };
 
-  const doGetItemData = async (id) => {
+  const doGetItemData = async id => {
+    const isConnected = await isNetworkAvailable();
+    setLoading(true);
+
+    if (isConnected) {
+      try {
+        const response = await getPropertyDetails(id);
+        setLoading(false);
+        if (response && response.status) {
+          const propertyData = response.data;
+
+          console.log('====================================');
+          console.log('propertyData ::; ', JSON.stringify(propertyData));
+          console.log('====================================');
+
+          setMainImage({ image: `${API_BASE_URL}uploads/${propertyData.main_image}`, });
+          setUserName(`${propertyData.firstName} ${propertyData.lastName}`);
+          setMobileNo(`${propertyData.phone_number}`);
+          setFullAddress(`${propertyData.address_line1} ${propertyData.address_line2} ${propertyData.area} ${propertyData.city} ${propertyData.state}`,);
+          setSelectedItems([
+            { title: 'Property Type', subTitle: propertyData.home_details.property_type, },
+            { title: 'Room Type', subTitle: propertyData.home_details.room_type },
+            { title: 'Rent', subTitle: propertyData.home_details.rent_amount.toString(), },
+            { title: 'Deposite', subTitle: propertyData.home_details.deposite_amount.toString(), },
+            { title: 'Area Type', subTitle: propertyData.home_details.area_type },
+            { title: 'Dietry Type', subTitle: propertyData.home_details.diet_type, },
+            { title: 'Religion Type', subTitle: propertyData.home_details.religion, },
+          ]);
+          setListDataFacilities(propertyData.facilities.map(title => ({ title })),);
+          setListDataAdvantage(propertyData.advantages.map(title => ({ title })));
+          setListDataNearBy(propertyData.near_by.map(title => ({ title })));
+          setListImages(propertyData.images.map(images => `${images}`));
+
+
+          setOwnerId(propertyData.owner_id);
+          setPropertyId(propertyData.property_id)
+        } else {
+          setLoading(false);
+          const message = response.message;
+          RNToasty.Show({ title: message });
+          if (message === 'Invalid token') {
+            doLogout();
+          }
+        }
+      } catch (error) {
+        setLoading(false);
+        const message = error.message;
+        RNToasty.Show({ title: message });
+        if (message === 'Invalid token') {
+          doLogout();
+        }
+      }
+    } else {
+      setLoading(false);
+      RNToasty.Show({ title: 'No internet connection available!' });
+    }
+  };
+
+  const doUpdateImages = async () => {
     const isConnected = await isNetworkAvailable();
     setLoading(true);
 
@@ -160,29 +210,98 @@ const DetailsScreen = props => {
       try {
 
 
-        const response = await getPropertyDetails(id);
+        const imageList = []
+        imageList.push({
+          id: 1,
+          image: '',
+          imageType: 'mainImage'
+        })
+        listImages.map((item, index) => {
+          imageList.push({
+            id: index + 2,
+            image: '',
+            imageType: 'subImage'
+          })
+        })
+
+        const response = await putPropertyList(imageList);
+        setLoading(false);
+        if (response && response.status) {
+          
+          const mainImageFinal = '';
+          const imageListFinal = [];
+          doUpdateProperty(imageListFinal, mainImageFinal)
+        } else {
+          setLoading(false);
+          const message = response.message;
+          RNToasty.Show({ title: message });
+          if (message === 'Invalid token') {
+            doLogout();
+          }
+        }
+      } catch (error) {
+        setLoading(false);
+        const message = error.message;
+        RNToasty.Show({ title: message });
+        if (message === 'Invalid token') {
+          doLogout();
+        }
+      }
+    } else {
+      setLoading(false);
+      RNToasty.Show({ title: 'No internet connection available!' });
+    }
+
+    
+  }
+
+  const doUpdateProperty = async (responseImageList, mainImage) => {
+    const isConnected = await isNetworkAvailable();
+    setLoading(true);
+
+    if (isConnected) {
+      try {
+
+        const propertyData = {
+          main_image: mainImage,
+          firstName: firstName,
+          lastName: lastName,
+          phone_number: mobileNo,
+          isLive: isLive,
+          address_line1: address_line1,
+          address_line2: address_line2,
+          area: area,
+          city: city,
+          state: state,
+          home_details: transformedData,
+          facilities: facility,
+          advantages: advantages,
+          near_by: nearBy,
+          images: responseImageList,
+        };
+
+        const response = await putPropertyList(propertyId, ownerId, propertyData);
         setLoading(false);
         if (response && response.status) {
           const propertyData = response.data;
 
-          setMainImage({ image: `${API_BASE_URL}uploads/${propertyData.main_image}` })
-          setUserName(`${propertyData.firstName} ${propertyData.lastName}`)
-          setMobileNo(`${propertyData.phone_number}`)
-          setFullAddress(`${propertyData.address_line1} ${propertyData.address_line2} ${propertyData.area} ${propertyData.city} ${propertyData.state}`)
+          setMainImage({ image: `${API_BASE_URL}uploads/${propertyData.main_image}`, });
+          setUserName(`${propertyData.firstName} ${propertyData.lastName}`);
+          setMobileNo(`${propertyData.phone_number}`);
+          setFullAddress(`${propertyData.address_line1} ${propertyData.address_line2} ${propertyData.area} ${propertyData.city} ${propertyData.state}`,);
           setSelectedItems([
-            { title: 'Property Type', subTitle: propertyData.home_details.property_type },
+            { title: 'Property Type', subTitle: propertyData.home_details.property_type, },
             { title: 'Room Type', subTitle: propertyData.home_details.room_type },
-            { title: 'Rent', subTitle: propertyData.home_details.rent_amount.toString() },
-            { title: 'Deposite', subTitle: propertyData.home_details.deposite_amount.toString() },
+            { title: 'Rent', subTitle: propertyData.home_details.rent_amount.toString(), },
+            { title: 'Deposite', subTitle: propertyData.home_details.deposite_amount.toString(), },
             { title: 'Area Type', subTitle: propertyData.home_details.area_type },
-            { title: 'Dietry Type', subTitle: propertyData.home_details.diet_type },
-            { title: 'Religion Type', subTitle: propertyData.home_details.religion },
+            { title: 'Dietry Type', subTitle: propertyData.home_details.diet_type, },
+            { title: 'Religion Type', subTitle: propertyData.home_details.religion, },
           ]);
-          setListDataFacilities(propertyData.facilities.map(title => ({title})))
-          setListDataAdvantage(propertyData.advantages.map(title => ({title})))
-          setListDataNearBy(propertyData.near_by.map(title => ({title})))
-          setListImages(propertyData.images.map(images=>`${images}`))
-
+          setListDataFacilities(propertyData.facilities.map(title => ({ title })),);
+          setListDataAdvantage(propertyData.advantages.map(title => ({ title })));
+          setListDataNearBy(propertyData.near_by.map(title => ({ title })));
+          setListImages(propertyData.images.map(images => `${images}`));
         } else {
           setLoading(false);
           const message = response.message;
@@ -399,24 +518,23 @@ const DetailsScreen = props => {
     const roomSelectedItems = listRoomType.filter(item => item.isSelected);
     const areaSelectedItems = listAreaType.filter(item => item.isSelected);
     const dietarySelectedItems = listDietaryType.filter(item => item.isSelected,);
-    const religionSelectedItems = listReligionType.filter(item => item.isSelected);
+    const religionSelectedItems = listReligionType.filter(item => item.isSelected,);
 
     const selectedData = [];
-    selectedData.push({ id: 1, title: 'Property Type', subTitle: selectSelectedItems[0].title })
+    selectedData.push({ id: 1, title: 'Property Type', subTitle: selectSelectedItems[0].title, });
     if (roomSelectedItems.length > 0) {
-      selectedData.push({ id: 2, title: 'Room Area', subTitle: roomSelectedItems[0].title })
+      selectedData.push({ id: 2, title: 'Room Area', subTitle: roomSelectedItems[0].title, });
     }
     selectedData.push(
       { id: 3, title: 'Rent', subTitle: rent },
       { id: 4, title: 'Deposite', subTitle: deposite },
       { id: 5, title: 'Area Type', subTitle: areaSelectedItems[0].title },
       { id: 6, title: 'Dietry Type', subTitle: dietarySelectedItems[0].title },
-      { id: 7, title: 'Religion Type', subTitle: religionSelectedItems[0].title }
-    )
-    setSelectedItems(selectedData)
+      { id: 7, title: 'Religion Type', subTitle: religionSelectedItems[0].title },
+    );
+    setSelectedItems(selectedData);
     setSelectTypeList(!selectTypeList);
-  }
-
+  };
 
   // ```
 
@@ -450,7 +568,7 @@ const DetailsScreen = props => {
               const image = {
                 image: result.assets[0].uri,
                 imageType: result.assets[0].type,
-              }
+              };
               setMainImage(image);
             } else {
               const imageList = [...listImages];
@@ -458,7 +576,7 @@ const DetailsScreen = props => {
                 id: listImages.length + 1,
                 image: result.assets[0].uri,
                 imageType: result.assets[0].type,
-                isLocal: true
+                isLocal: true,
               });
               setListImages(imageList);
             }
@@ -484,7 +602,7 @@ const DetailsScreen = props => {
               const image = {
                 image: result.assets[0].uri,
                 imageType: result.assets[0].type,
-              }
+              };
               setMainImage(image);
             } else {
               const imageList = [...listImages];
@@ -492,7 +610,7 @@ const DetailsScreen = props => {
                 id: listImages.length + 1,
                 image: result.assets[0].uri,
                 imageType: result.assets[0].type,
-                isLocal: true
+                isLocal: true,
               });
               setListImages(imageList);
             }
@@ -592,9 +710,12 @@ const DetailsScreen = props => {
         });
 
         const tokenTitle = AppConstants.AsyncKeyLiterals.token;
-        const token = await cacheData.getDataFromCachedWithKey(tokenTitle)
+        const token = await cacheData.getDataFromCachedWithKey(tokenTitle);
         const _config = {
-          headers: { 'Content-Type': 'multipart/form-data', Authorization: token },
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: token,
+          },
           timeout: 6000,
         };
 
@@ -604,7 +725,7 @@ const DetailsScreen = props => {
           const responseImageList = response.data;
           const finalImageList = [];
           responseImageList.forEach(image => {
-            finalImageList.push(image.filename)
+            finalImageList.push(image.filename);
           });
           doAddMainImage(finalImageList);
         } else {
@@ -629,7 +750,7 @@ const DetailsScreen = props => {
     }
   };
 
-  const doAddMainImage = async (finalImageList) => {
+  const doAddMainImage = async finalImageList => {
     const isConnected = await isNetworkAvailable();
     setLoading(true);
 
@@ -648,9 +769,12 @@ const DetailsScreen = props => {
         });
 
         const tokenTitle = AppConstants.AsyncKeyLiterals.token;
-        const token = await cacheData.getDataFromCachedWithKey(tokenTitle)
+        const token = await cacheData.getDataFromCachedWithKey(tokenTitle);
         const _config = {
-          headers: { 'Content-Type': 'multipart/form-data', Authorization: token },
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: token,
+          },
           timeout: 6000,
         };
 
@@ -660,7 +784,7 @@ const DetailsScreen = props => {
           const responseImageList = response.data;
           let mainImage = '';
           responseImageList.forEach(image => {
-            mainImage = image.filename
+            mainImage = image.filename;
           });
           setSelectedImage(mainImage);
           doAddProperty(finalImageList, mainImage);
@@ -690,18 +814,18 @@ const DetailsScreen = props => {
     const isConnected = await isNetworkAvailable();
     setLoading(true);
 
-    const facility = listDataFacilities.map(item => item.title)
-    const advantages = listDataAdvantage.map(item => item.title)
-    const nearBy = listDataNearBy.map(item => item.title)
+    const facility = listDataFacilities.map(item => item.title);
+    const advantages = listDataAdvantage.map(item => item.title);
+    const nearBy = listDataNearBy.map(item => item.title);
 
     const titleToKeyMap = {
       'Property Type': 'property_type',
       'Room Area': 'room_type',
-      'Rent': 'rent_amount',
-      'Deposite': 'deposite_amount',
+      Rent: 'rent_amount',
+      Deposite: 'deposite_amount',
       'Area Type': 'area_type',
       'Dietry Type': 'diet_type',
-      'Religion Type': 'religion'
+      'Religion Type': 'religion',
     };
 
     const transformedData = selectedItems.reduce((acc, curr) => {
@@ -712,7 +836,6 @@ const DetailsScreen = props => {
       return acc;
     }, {});
 
-
     if (isConnected) {
       try {
         const propertyData = {
@@ -721,8 +844,8 @@ const DetailsScreen = props => {
           lastName: lastName,
           phone_number: mobileNo,
           isLive: isLive,
-          address_line1:address_line1,
-          address_line2:address_line2,
+          address_line1: address_line1,
+          address_line2: address_line2,
           area: area,
           city: city,
           state: state,
@@ -759,6 +882,48 @@ const DetailsScreen = props => {
       RNToasty.Show({ title: 'No internet connection available!' });
     }
   };
+
+  // const doUpdateProperty = async (id, userId) => {
+  //   const isConnected = await isNetworkAvailable();
+  //   setLoading(true);
+  //   if (isConnected) {
+  //     try {
+  //       const response = await putPropertyList(id, userId);
+  //       console.log('====================================');
+  //       console.log('update response::', JSON.stringify(response));
+  //       console.log('====================================');
+  //       setLoading(false);
+  //       if (response && response.status) {
+  //         setIsEdit(false);
+  //         console.log('Property updated successfully:');
+  //         RNToasty.Show({ title: 'Property updated successfully' });
+  //       } else {
+  //         setLoading(false);
+  //         const message = response.message;
+  //         console.log('====================================');
+  //         console.log('update message::', JSON.stringify(message));
+  //         console.log('====================================');
+  //         RNToasty.Show({ title: message });
+  //         if (message === 'Invalid token') {
+  //           doLogout();
+  //         }
+  //       }
+  //     } catch (error) {
+  //       setLoading(false);
+  //       const message = error.message;
+  //       console.log('====================================');
+  //       console.log('update error::', JSON.stringify(error));
+  //       console.log('====================================');
+  //       RNToasty.Show({ title: message });
+  //       if (message === 'Invalid token') {
+  //         doLogout();
+  //       }
+  //     }
+  //   } else {
+  //     setLoading(false);
+  //     RNToasty.Show({ title: 'No internet connection available!' });
+  //   }
+  // };
 
   const doLogout = () => {
     const appData = AppConstants.AsyncKeyLiterals;
@@ -1030,9 +1195,12 @@ const DetailsScreen = props => {
                 title={'save'}
                 onPress={() => {
                   if (isValid()) {
-                    // setIsEdit(false);
+                    if (isEdit) {
+
+                      doUpdateImages();
+                    } else {
                     doAddImages();
-                    // doAddProperty();
+                    }
                   }
                 }}
               />
@@ -1102,7 +1270,7 @@ const DetailsScreen = props => {
                               setIsRoomDataVisible(false);
 
                               const newList = [...listRoomType];
-                              newList.map(item => item.isSelected = false);
+                              newList.map(item => (item.isSelected = false));
                               setListRoomType(newList);
                             }
                           }
@@ -1202,7 +1370,6 @@ const DetailsScreen = props => {
                       }}
                       error={errorReligionType}
                     />
-
                   </KeyboardAwareScrollView>
                   <View
                     style={{
@@ -1321,7 +1488,7 @@ const DetailsScreen = props => {
             }}
             onDone={() => {
               if (isValidAddAdvantages()) {
-                setListDataAdvantage(listAdvantages)
+                setListDataAdvantage(listAdvantages);
                 setIsVisibleAdvantages(!isVisibleAdvantages);
               }
             }}
@@ -1369,7 +1536,7 @@ const DetailsScreen = props => {
             }}
             onDone={() => {
               if (isValidAddNearBy()) {
-                setListDataNearBy(listNearBy)
+                setListDataNearBy(listNearBy);
                 setIsVisibleNearBy(!isVisibleNearBy);
               }
             }}
