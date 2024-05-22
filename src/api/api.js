@@ -2,6 +2,7 @@ import {Platform} from 'react-native';
 import {check, request, PERMISSIONS, RESULTS} from 'react-native-permissions';
 import NetInfo from '@react-native-community/netinfo';
 import axios from 'axios';
+import {RNToasty} from 'react-native-toasty';
 
 let token;
 
@@ -16,7 +17,7 @@ export const API = axios.create({
 API.interceptors.request.use(
   function (_config) {
     if (token !== null && token !== '') {
-      _config.headers.authorization = token;
+      _config.headers.Authorization = 'Bearer' + token;
     }
 
     if (_config.headers['Content-Type'] !== 'multipart/form-data') {
@@ -25,7 +26,7 @@ API.interceptors.request.use(
     return _config;
   },
   function (error) {
-    console.log('API ERROR :: ' + JSON.stringify(error));
+    console.log('API ERROR ::' + JSON.stringify(error));
   },
 );
 
@@ -34,27 +35,48 @@ API.interceptors.response.use(
     return response;
   },
   async function (error) {
-    if (error.response) {
-      return error.response 
+    if (error.code === 'ECONNABORTED') {
+      RNToasty.Show({
+        title: 'Network appears to be slow, try again later',
+      });
+      return '';
     } else {
-      return error;
+      if (error?.response?.status === 400) {
+        const res = {
+          ...error,
+          data: {status: 400, ...error?.response?.data},
+        };
+        return res;
+      }
+      if (error?.response?.status === 401) {
+        const res = {data: 'Invalid Token', status: 401};
+        return res;
+      } else if (error?.response?.status === 500) {
+        const res = {
+          ...error,
+          data: {status: 500, ...error?.data},
+        };
+        return res;
+      } else {
+        const message = error.response.data.message;
+      }
     }
-  }
+  },
 );
 
-export const saveToken = (data) => {
+export const saveToken = data => {
   token = data;
 };
 
 export const isNetworkAvailable = async () => {
   let response = false;
-  await NetInfo.fetch().then((networkState) => {
+  await NetInfo.fetch().then(networkState => {
     response = networkState.isConnected;
   });
   return response;
 };
 
-export const checkPermission = async (item) => {
+export const checkPermission = async item => {
   let finalData;
   if (item === 'camera') {
     let response;
@@ -178,7 +200,7 @@ export const checkPermission = async (item) => {
   return finalData;
 };
 
-export const permissionRequest = async (item) => {
+export const permissionRequest = async item => {
   let finalData;
   if (item === 'camera') {
     let response;

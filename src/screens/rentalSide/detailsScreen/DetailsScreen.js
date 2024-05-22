@@ -539,15 +539,12 @@ const DetailsScreen = props => {
   // ```
 
   const doCheckPermission = async id => {
-    if (Platform.OS === 'android') {
       const permission = await doCheckCameraPermission();
       if (permission.success === true) {
         doGetCamImage(id);
       } else {
         setIsVisibleChooseImage(!isVisibleChooseImage);
       }
-    } else {
-    }
   };
 
   const doGetCamImage = id => {
@@ -622,76 +619,367 @@ const DetailsScreen = props => {
     }
   };
 
-  const doCheckCameraPermission = async () => {
-    let data;
-    const checkStatus = await checkMultiple([
-      PERMISSIONS.ANDROID.CAMERA,
-      PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
-      PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
-    ]);
-    let successCountCheck = 0;
-    if (
-      checkStatus[PERMISSIONS.ANDROID.CAMERA] === RESULTS.GRANTED ||
-      checkStatus[PERMISSIONS.ANDROID.CAMERA] === RESULTS.LIMITED
-    ) {
-      successCountCheck = successCountCheck + 1;
-    }
-    if (
-      checkStatus[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE] ===
-      RESULTS.GRANTED ||
-      checkStatus[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE] === RESULTS.LIMITED
-    ) {
-      successCountCheck = successCountCheck + 1;
-    }
-    if (
-      checkStatus[PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE] ===
-      RESULTS.GRANTED ||
-      checkStatus[PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE] ===
-      RESULTS.LIMITED
-    ) {
-      successCountCheck = successCountCheck + 1;
-    }
+  // const doCheckCameraPermission = async () => {
+  //   let data;
+  //   const checkStatus = await checkMultiple([
+  //     PERMISSIONS.ANDROID.CAMERA,
+  //     PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
+  //     PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
+  //   ]);
+  //   let successCountCheck = 0;
+  //   if (
+  //     checkStatus[PERMISSIONS.ANDROID.CAMERA] === RESULTS.GRANTED ||
+  //     checkStatus[PERMISSIONS.ANDROID.CAMERA] === RESULTS.LIMITED
+  //   ) {
+  //     successCountCheck = successCountCheck + 1;
+  //   }
+  //   if (
+  //     checkStatus[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE] ===
+  //     RESULTS.GRANTED ||
+  //     checkStatus[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE] === RESULTS.LIMITED
+  //   ) {
+  //     successCountCheck = successCountCheck + 1;
+  //   }
+  //   if (
+  //     checkStatus[PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE] ===
+  //     RESULTS.GRANTED ||
+  //     checkStatus[PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE] ===
+  //     RESULTS.LIMITED
+  //   ) {
+  //     successCountCheck = successCountCheck + 1;
+  //   }
 
-    if (successCountCheck === 3) {
-      data = { success: true };
-    } else {
-      const getStatus = await requestMultiple([
-        PERMISSIONS.ANDROID.CAMERA,
-        PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
-        PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
-      ]);
-      console.log('getStatus :: ', getStatus);
+  //   if (successCountCheck === 3) {
+  //     data = { success: true };
+  //   } else {
+  //     const getStatus = await requestMultiple([
+  //       PERMISSIONS.ANDROID.CAMERA,
+  //       PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
+  //       PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
+  //     ]);
+  //     console.log('getStatus :: ', getStatus);
 
-      let suucessCountGet = 0;
-      if (
-        getStatus[PERMISSIONS.ANDROID.CAMERA] === RESULTS.GRANTED ||
-        getStatus[PERMISSIONS.ANDROID.CAMERA] === RESULTS.LIMITED
-      ) {
-        suucessCountGet = suucessCountGet + 1;
-      }
-      if (
-        getStatus[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE] ===
-        RESULTS.GRANTED ||
-        getStatus[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE] === RESULTS.LIMITED
-      ) {
-        suucessCountGet = suucessCountGet + 1;
-      }
-      if (
-        getStatus[PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE] ===
-        RESULTS.GRANTED ||
-        getStatus[PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE] ===
-        RESULTS.LIMITED
-      ) {
-        suucessCountGet = suucessCountGet + 1;
-      }
+  //     let suucessCountGet = 0;
+  //     if (
+  //       getStatus[PERMISSIONS.ANDROID.CAMERA] === RESULTS.GRANTED ||
+  //       getStatus[PERMISSIONS.ANDROID.CAMERA] === RESULTS.LIMITED
+  //     ) {
+  //       suucessCountGet = suucessCountGet + 1;
+  //     }
+  //     if (
+  //       getStatus[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE] ===
+  //       RESULTS.GRANTED ||
+  //       getStatus[PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE] === RESULTS.LIMITED
+  //     ) {
+  //       suucessCountGet = suucessCountGet + 1;
+  //     }
+  //     if (
+  //       getStatus[PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE] ===
+  //       RESULTS.GRANTED ||
+  //       getStatus[PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE] ===
+  //       RESULTS.LIMITED
+  //     ) {
+  //       suucessCountGet = suucessCountGet + 1;
+  //     }
 
-      if (suucessCountGet === 3) {
-        data = { success: true };
-      } else {
-        data = { success: false };
+  //     if (suucessCountGet === 3) {
+  //       data = { success: true };
+  //     } else {
+  //       data = { success: false };
+  //     }
+  //   }
+  //   return data;
+  // };
+
+ const doCheckCameraPermission = async item => {
+    let finalData = {success:true};
+    if (item === 'camera') {
+      let response;
+      if (Platform.OS === 'android') {
+        response = await check(PERMISSIONS.ANDROID.CAMERA)
+          .then(async result => {
+            let data;
+            console.log(JSON.stringify(result));
+            switch (result) {
+              case RESULTS.UNAVAILABLE:
+                data = await permissionRequest(item);
+                break;
+              case RESULTS.DENIED:
+                data = await permissionRequest(item);
+                break;
+              case RESULTS.GRANTED:
+                data = {
+                  result: true,
+                  permission: 'GRANTED',
+                };
+                break;
+              case RESULTS.BLOCKED:
+                data = await permissionRequest(item);
+                break;
+            }
+            return data;
+          })
+          .catch(async _error => {
+            return await permissionRequest(item);
+          });
+      } else if (Platform.OS === 'ios') {
+        response = await check(PERMISSIONS.IOS.CAMERA)
+          .then(async result => {
+            let data;
+            switch (result) {
+              case RESULTS.UNAVAILABLE:
+                data = await permissionRequest(item);
+                break;
+              case RESULTS.DENIED:
+                data = await permissionRequest(item);
+                break;
+              case RESULTS.GRANTED:
+                data = {
+                  result: true,
+                  permission: 'GRANTED',
+                };
+                break;
+              case RESULTS.BLOCKED:
+                data = await permissionRequest(item);
+                break;
+            }
+            return data;
+          })
+          .catch(async _error => {
+            return await permissionRequest(item);
+          });
       }
+      finalData = response;
+      return response;
+    } else if (item === 'gallery') {
+      let response;
+      if (Platform.OS === 'android') {
+        response = await check(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE)
+          .then(async result => {
+            let data;
+            switch (result) {
+              case RESULTS.UNAVAILABLE:
+                data = await permissionRequest(item);
+                break;
+              case RESULTS.DENIED:
+                data = await permissionRequest(item);
+                break;
+              case RESULTS.GRANTED:
+                data = {
+                  result: true,
+                  permission: 'GRANTED',
+                };
+                break;
+              case RESULTS.BLOCKED:
+                data = await permissionRequest(item);
+                break;
+            }
+            return data;
+          })
+          .catch(async _error => {
+            return await permissionRequest(item);
+          });
+      } else if (Platform.OS === 'ios') {
+        response = await check(PERMISSIONS.IOS.PHOTO_LIBRARY)
+          .then(async result => {
+            let data;
+            switch (result) {
+              case RESULTS.UNAVAILABLE:
+                data = await permissionRequest(item);
+                break;
+              case RESULTS.LIMITED:
+                data = await permissionRequest(item);
+                break;
+              case RESULTS.DENIED:
+                data = await permissionRequest(item);
+                break;
+              case RESULTS.GRANTED:
+                data = {
+                  result: true,
+                  permission: 'GRANTED',
+                };
+                break;
+              case RESULTS.BLOCKED:
+                data = await permissionRequest(item);
+                break;
+            }
+            return data;
+          })
+          .catch(async _error => {
+            return await permissionRequest(item);
+          });
+      }
+      finalData = response;
+      return response;
     }
-    return data;
+    return finalData;
+  };
+  
+ const permissionRequest = async item => {
+    let finalData;
+    if (item === 'camera') {
+      let response;
+      if (Platform.OS === 'android') {
+        response = await request(PERMISSIONS.ANDROID.CAMERA).then(result => {
+          let data;
+          console.log(JSON.stringify(result));
+          switch (result) {
+            case RESULTS.UNAVAILABLE:
+              data = {
+                result: false,
+                permission: 'UNAVAILABLE',
+              };
+              break;
+            case RESULTS.DENIED:
+              data = {
+                result: false,
+                permission: 'DENIED',
+              };
+              break;
+            case RESULTS.LIMITED:
+              data = {
+                result: false,
+                permission: 'LIMITED',
+              };
+              break;
+            case RESULTS.GRANTED:
+              data = {
+                result: true,
+                permission: 'GRANTED',
+              };
+              break;
+            case RESULTS.BLOCKED:
+              data = {
+                result: false,
+                permission: 'BLOCKED',
+              };
+              break;
+          }
+          return data;
+        });
+      } else if (Platform.OS === 'ios') {
+        response = await request(PERMISSIONS.IOS.CAMERA).then(result => {
+          let data;
+          switch (result) {
+            case RESULTS.UNAVAILABLE:
+              data = {
+                result: false,
+                permission: 'UNAVAILABLE',
+              };
+              break;
+            case RESULTS.DENIED:
+              data = {
+                result: false,
+                permission: 'DENIED',
+              };
+              break;
+            case RESULTS.LIMITED:
+              data = {
+                result: false,
+                permission: 'LIMITED',
+              };
+              break;
+            case RESULTS.GRANTED:
+              data = {
+                result: true,
+                permission: 'GRANTED',
+              };
+              break;
+            case RESULTS.BLOCKED:
+              data = {
+                result: false,
+                permission: 'BLOCKED',
+              };
+              break;
+          }
+          return data;
+        });
+      }
+      finalData = response;
+      return response;
+    } else if (item === 'gallery') {
+      let response;
+      if (Platform.OS === 'android') {
+        response = await request(PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE).then(
+          result => {
+            let data;
+            switch (result) {
+              case RESULTS.UNAVAILABLE:
+                data = {
+                  result: false,
+                  permission: 'UNAVAILABLE',
+                };
+                break;
+              case RESULTS.DENIED:
+                data = {
+                  result: false,
+                  permission: 'DENIED',
+                };
+                break;
+              case RESULTS.LIMITED:
+                data = {
+                  result: false,
+                  permission: 'LIMITED',
+                };
+                break;
+              case RESULTS.GRANTED:
+                data = {
+                  result: true,
+                  permission: 'GRANTED',
+                };
+                break;
+              case RESULTS.BLOCKED:
+                data = {
+                  result: false,
+                  permission: 'BLOCKED',
+                };
+                break;
+            }
+            return data;
+          },
+        );
+      } else if (Platform.OS === 'ios') {
+        response = await request(PERMISSIONS.IOS.PHOTO_LIBRARY).then(result => {
+          let data;
+          switch (result) {
+            case RESULTS.UNAVAILABLE:
+              data = {
+                result: false,
+                permission: 'UNAVAILABLE',
+              };
+              break;
+            case RESULTS.DENIED:
+              data = {
+                result: false,
+                permission: 'DENIED',
+              };
+              break;
+            case RESULTS.LIMITED:
+              data = {
+                result: false,
+                permission: 'LIMITED',
+              };
+              break;
+            case RESULTS.GRANTED:
+              data = {
+                result: true,
+                permission: 'GRANTED',
+              };
+              break;
+            case RESULTS.BLOCKED:
+              data = {
+                result: false,
+                permission: 'BLOCKED',
+              };
+              break;
+          }
+          return data;
+        });
+      }
+      finalData = response;
+      return response;
+    }
+    return finalData;
   };
 
   const doAddImages = async () => {
